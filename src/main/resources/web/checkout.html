@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FakeStore — Cart</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <div id="bar"></div>
+  <main>
+    <h2>Your cart</h2>
+    <div id="out"></div>
+  </main>
+
+  <script src="app.js"></script>
+  <script>
+    const TAX_RATE = 0.13;  // preview only; the server computes the real total
+
+    function render() {
+      const out = document.getElementById("out");
+      const cart = getCart();
+      if (cart.length === 0) {
+        out.innerHTML = `<div class="note info">Your cart is empty. <a href="index.html">Browse the catalogue</a>.</div>`;
+        return;
+      }
+      let subtotal = 0;
+      const rows = cart.map(l => {
+        const lt = l.price * l.qty; subtotal += lt;
+        return `<tr><td>${esc(l.title)}</td><td class="num">${money(l.price)}</td>
+          <td class="num">
+            <button class="ghost" data-dec="${l.id}">−</button> ${l.qty}
+            <button class="ghost" data-inc="${l.id}">+</button>
+          </td><td class="num">${money(lt)}</td>
+          <td class="num"><button class="ghost" data-del="${l.id}">remove</button></td></tr>`;
+      }).join("");
+      const tax = subtotal * TAX_RATE;
+      out.innerHTML = `
+        <table>
+          <thead><tr><th>Item</th><th class="num">Price</th><th class="num">Qty</th>
+            <th class="num">Line total</th><th></th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <div class="totals">
+          <div class="row"><span>Subtotal</span><span>${money(subtotal)}</span></div>
+          <div class="row"><span>Tax (preview)</span><span>${money(tax)}</span></div>
+          <div class="row grand"><span>Total</span><span>${money(subtotal + tax)}</span></div>
+        </div>
+        <div class="field"><label for="email">Email for the order</label>
+          <input id="email" type="email" placeholder="you@example.com"></div>
+        <div id="msg"></div>
+        <button id="place">Place order</button>
+        <button class="ghost" id="empty">Empty cart</button>`;
+
+      out.querySelectorAll("[data-inc]").forEach(b => b.onclick = () => changeQty(+b.dataset.inc, +1));
+      out.querySelectorAll("[data-dec]").forEach(b => b.onclick = () => changeQty(+b.dataset.dec, -1));
+      out.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { saveCart(getCart().filter(l => l.id !== +b.dataset.del)); render(); });
+      document.getElementById("empty").onclick = () => { clearCart(); render(); };
+      document.getElementById("place").onclick = placeOrder;
+    }
+
+    function changeQty(id, d) {
+      const cart = getCart(); const l = cart.find(x => x.id === id); if (!l) return;
+      l.qty += d; if (l.qty < 1) { saveCart(cart.filter(x => x.id !== id)); } else { saveCart(cart); }
+      render();
+    }
+
+    function msg(kind, text) { document.getElementById("msg").innerHTML = `<div class="note ${kind}">${esc(text)}</div>`; }
+
+    async function placeOrder() {
+      const email = document.getElementById("email").value.trim();
+      if (!email) return msg("err", "Enter an email for the order.");
+      const body = { email, items: getCart().map(l => ({ productId: l.id, quantity: l.qty })) };
+      msg("info", "Placing your order…");
+      try {
+        const res = await fetch("/api/orders", {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
+        });
+        if (res.status === 201) {
+          const order = await res.json();
+          clearCart();
+          location.href = "confirmation.html?order=" + encodeURIComponent(order.orderNumber);
+        } else if (res.status === 409) msg("err", "An item just went out of stock. Adjust the cart and try again.");
+        else if (res.status === 422) msg("err", "The server rejected the order. Check your quantities.");
+        else if (res.status === 404) msg("err", "One of the products no longer exists.");
+        else if (res.status === 501) msg("info", "Checkout isn't implemented yet — that's the lab.");
+        else msg("err", "Order failed (HTTP " + res.status + ").");
+      } catch (e) { msg("err", "Could not reach the server."); }
+    }
+
+    render();
+  </script>
+</body>
+</html>

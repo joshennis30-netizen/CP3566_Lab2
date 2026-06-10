@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FakeStore — Confirmation</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <div id="bar"></div>
+  <main>
+    <div id="out"><p class="muted">Loading…</p></div>
+  </main>
+
+  <script src="app.js"></script>
+  <script>
+    const orderNumber = new URLSearchParams(location.search).get("order");
+
+    async function load() {
+      const out = document.getElementById("out");
+      if (!orderNumber) { out.innerHTML = `<div class="note err">No order number.</div>`; return; }
+      const res = await fetch("/api/orders/" + encodeURIComponent(orderNumber));
+      if (!res.ok) { out.innerHTML = `<div class="note err">Order ${esc(orderNumber)} not found.</div>`; return; }
+      const o = await res.json();
+      const lines = o.lines.map(l => `<tr><td>${esc(l.title)}</td>
+        <td class="num">${money(l.unitPrice)}</td><td class="num">${l.quantity}</td>
+        <td class="num">${money(l.lineTotal)}</td></tr>`).join("");
+      out.innerHTML = `
+        <div class="note ok">Order <strong>${esc(o.orderNumber)}</strong> placed. Thanks!</div>
+        <p class="muted">Confirmation for ${esc(o.email || "")} · ${esc(o.placedAt || "")}</p>
+        <table>
+          <thead><tr><th>Item</th><th class="num">Price</th><th class="num">Qty</th><th class="num">Line total</th></tr></thead>
+          <tbody>${lines}</tbody>
+        </table>
+        <div class="totals">
+          <div class="row"><span>Subtotal</span><span>${money(o.subtotal)}</span></div>
+          <div class="row"><span>Tax</span><span>${money(o.tax)}</span></div>
+          <div class="row grand"><span>Total</span><span>${money(o.total)}</span></div>
+        </div>
+        <p><a href="index.html">← Keep shopping</a></p>`;
+    }
+    load();
+  </script>
+</body>
+</html>

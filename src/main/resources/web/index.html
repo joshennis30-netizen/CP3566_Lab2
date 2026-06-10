@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FakeStore — Catalogue</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <div id="bar"></div>
+  <main>
+    <div class="controls">
+      <input id="q" placeholder="Search…" style="flex:1;min-width:160px">
+      <select id="category"><option value="">All categories</option></select>
+      <select id="sort">
+        <option value="">Sort: featured</option>
+        <option value="price_asc">Price: low → high</option>
+        <option value="price_desc">Price: high → low</option>
+        <option value="rating">Rating</option>
+        <option value="title">Title A–Z</option>
+      </select>
+      <button id="go">Search</button>
+    </div>
+
+    <div id="out" class="grid"></div>
+    <div class="pager">
+      <button class="ghost" id="prev">← Prev</button>
+      <span id="pageInfo" class="muted"></span>
+      <button class="ghost" id="next">Next →</button>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+  <script>
+    let page = 1;
+    const pageSize = 24;
+
+    async function loadCategories() {
+      const res = await fetch("/api/categories");
+      if (!res.ok) return;
+      const cats = await res.json();
+      document.getElementById("category").insertAdjacentHTML("beforeend",
+        cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join(""));
+    }
+
+    async function load() {
+      const q = document.getElementById("q").value.trim();
+      const category = document.getElementById("category").value;
+      const sort = document.getElementById("sort").value;
+      const params = new URLSearchParams({ page, pageSize });
+      if (q) params.set("q", q);
+      if (category) params.set("category", category);
+      if (sort) params.set("sort", sort);
+
+      const out = document.getElementById("out");
+      out.innerHTML = `<p class="muted">Loading…</p>`;
+      try {
+        const res = await fetch("/api/products?" + params);
+        if (!res.ok) { out.innerHTML = `<div class="note err">API error ${res.status}. Have you implemented JdbcProductDao yet?</div>`; return; }
+        const total = Number(res.headers.get("X-Total-Count") || 0);
+        const products = await res.json();
+        out.innerHTML = products.map(card).join("") || `<p class="muted">No products.</p>`;
+        const lastPage = Math.max(1, Math.ceil(total / pageSize));
+        document.getElementById("pageInfo").textContent = `Page ${page} of ${lastPage} · ${total} items`;
+        document.getElementById("prev").disabled = page <= 1;
+        document.getElementById("next").disabled = page >= lastPage;
+        out.querySelectorAll("[data-add]").forEach(b => b.onclick = () => {
+          addToCart(JSON.parse(b.dataset.add), 1);
+          b.textContent = "Added ✓";
+        });
+      } catch (e) {
+        out.innerHTML = `<div class="note err">Could not reach the server.</div>`;
+      }
+    }
+
+    function card(p) {
+      const json = esc(JSON.stringify({ id: p.id, title: p.title, price: p.price }));
+      return `<div class="card">
+        <a href="product.html?id=${p.id}">${thumb(p, "cardimg")}</a>
+        <div class="title"><a href="product.html?id=${p.id}">${esc(p.title)}</a></div>
+        <div class="muted">${esc(p.category)} · ★ ${p.rating?.rate ?? ""}</div>
+        <div class="price">${money(p.price)}</div>
+        <button data-add="${json}">Add to cart</button>
+      </div>`;
+    }
+
+    document.getElementById("go").onclick = () => { page = 1; load(); };
+    document.getElementById("q").addEventListener("keydown", e => { if (e.key === "Enter") { page = 1; load(); } });
+    document.getElementById("prev").onclick = () => { if (page > 1) { page--; load(); } };
+    document.getElementById("next").onclick = () => { page++; load(); };
+
+    loadCategories();
+    load();
+  </script>
+</body>
+</html>

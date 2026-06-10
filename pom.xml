@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>ca.nl.cna.cp3566</groupId>
+    <artifactId>lab2-fakestore</artifactId>
+    <version>2.0.0</version>
+
+    <name>CP3566 Lab 2 — FakeStore</name>
+    <description>
+        Lab 2 starter (architecture edition). A small fake-Amazon built on the
+        Module 4 Jersey + Grizzly stack, now layered behind abstract repository
+        and service classes. The catalogue is seeded from the real ASOS dataset.
+        You implement the JDBC repositories and the order/registration logic by
+        completing the abstract methods — without changing the structure you are
+        given. See LAB2.docx for the full instructions.
+    </description>
+
+    <properties>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <jersey.version>3.1.10</jersey.version>
+        <!-- Which class `./mvnw exec:java` runs. Override on the command line,
+             e.g. the oversell proof:
+               ./mvnw exec:java -Dexec.mainClass=ca.nl.cna.cp3566.store.ConcurrencyTest -->
+        <exec.mainClass>ca.nl.cna.cp3566.store.Main</exec.mainClass>
+    </properties>
+
+    <!-- The Jersey BOM keeps every jersey-* jar on the same version. -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.glassfish.jersey</groupId>
+                <artifactId>jersey-bom</artifactId>
+                <version>${jersey.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <!-- Embedded HTTP server (Grizzly) with Jersey in front of it. -->
+        <dependency>
+            <groupId>org.glassfish.jersey.containers</groupId>
+            <artifactId>jersey-container-grizzly2-http</artifactId>
+        </dependency>
+
+        <!-- Dependency-injection runtime Jersey needs at startup. -->
+        <dependency>
+            <groupId>org.glassfish.jersey.inject</groupId>
+            <artifactId>jersey-hk2</artifactId>
+        </dependency>
+
+        <!-- Jackson: turns records into JSON and binds JSON bodies into records. -->
+        <dependency>
+            <groupId>org.glassfish.jersey.media</groupId>
+            <artifactId>jersey-media-json-jackson</artifactId>
+        </dependency>
+
+        <!-- H2: an embedded SQL database. Same JDBC you used in Module 2.
+             File-based (under ./data) so the data survives a restart. -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>2.3.232</version>
+        </dependency>
+
+        <!-- JUnit 5 (Jupiter): the testing framework. "test" scope = only on the
+             test classpath, never shipped. The provided tests in src/test/java
+             use this; run them with `./mvnw test`. See TESTING.docx. -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.2</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>lab2-fakestore</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+            </plugin>
+            <!-- Lets you run the server (or any main) with `./mvnw exec:java`. -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.5.0</version>
+                <configuration>
+                    <mainClass>${exec.mainClass}</mainClass>
+                </configuration>
+            </plugin>
+            <!-- Surefire runs the JUnit tests on `./mvnw test`. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+            </plugin>
+        </plugins>
+    </build>
+</project>

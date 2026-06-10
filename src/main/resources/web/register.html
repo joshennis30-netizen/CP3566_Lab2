@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FakeStore — Create account</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <div id="bar"></div>
+  <main>
+    <h2>Create account</h2>
+    <div class="panel" style="max-width:380px">
+      <div class="field"><label for="name">Name</label><input id="name"></div>
+      <div class="field"><label for="email">Email</label><input id="email" type="email"></div>
+      <div class="field"><label for="pw">Password (min 8)</label><input id="pw" type="password"></div>
+      <div id="msg"></div>
+      <button id="submit">Create account</button>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+  <script>
+    function msg(kind, text) { document.getElementById("msg").innerHTML = `<div class="note ${kind}">${text}</div>`; }
+
+    document.getElementById("submit").onclick = async () => {
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const pw = document.getElementById("pw").value;
+      msg("info", "Submitting…");
+      try {
+        const res = await fetch("/api/users", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email, password: pw })
+        });
+        if (res.status === 201) {
+          const u = await res.json();
+          sessionStorage.setItem("fakestore.email", u.email);
+          msg("ok", `Welcome, ${esc(u.name)}! Account #${u.id} is ready.`);
+        } else if (res.status === 409) {
+          msg("err", "An account with that email already exists.");
+        } else if (res.status === 422) {
+          const body = await res.json();
+          const fields = body.fields ? Object.values(body.fields).map(esc).join(" ") : esc(body.message || "");
+          msg("err", "Please fix: " + fields);
+        } else {
+          msg("err", "Registration failed (HTTP " + res.status + ").");
+        }
+      } catch (e) { msg("err", "Could not reach the server."); }
+    };
+  </script>
+</body>
+</html>

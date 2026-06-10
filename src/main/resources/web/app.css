@@ -1,0 +1,51 @@
+/* FakeStore — deliberately minimal styling. You do NOT have to touch the front
+   end for this lab; it is here only so you can click through what your API does. */
+
+* { box-sizing: border-box; }
+body { font-family: system-ui, Arial, sans-serif; margin: 0; color: #222; background: #fafafa; }
+a { color: #0b62c4; text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.bar { display: flex; align-items: center; gap: 1rem; padding: .8rem 1.2rem;
+       background: #131921; color: #fff; }
+.bar a { color: #fff; }
+.bar .logo { font-weight: 700; font-size: 1.2rem; }
+.bar .grow { flex: 1; }
+
+main { max-width: 1000px; margin: 1.2rem auto; padding: 0 1rem; }
+
+.controls { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
+.controls input, .controls select, button { padding: .5rem .6rem; font-size: .95rem; }
+button { background: #0b62c4; color: #fff; border: 0; border-radius: 4px; cursor: pointer; }
+button.ghost { background: #eee; color: #222; }
+button:hover { opacity: .92; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
+.card { background: #fff; border: 1px solid #e3e3e3; border-radius: 6px; padding: .8rem; }
+.card .title { font-size: .9rem; margin: .4rem 0; min-height: 2.4em; }
+
+/* product thumbnails — a real <img> only when a local file exists, otherwise a
+   coloured initials tile that needs no network at all. */
+.cardimg { display: block; width: 100%; height: 160px; object-fit: cover; border-radius: 4px; background: #f0f0f0; }
+.detimg  { width: 280px; height: 280px; object-fit: cover; border-radius: 6px; }
+.thumb { display: flex; align-items: center; justify-content: center;
+         color: #fff; font-weight: 700; letter-spacing: 1px; }
+.cardimg.thumb { font-size: 2.4rem; }
+.detimg.thumb  { font-size: 4rem; }
+.card .price { font-weight: 700; }
+.muted { color: #777; font-size: .85rem; }
+
+table { width: 100%; border-collapse: collapse; background: #fff; }
+th, td { padding: .5rem; border-bottom: 1px solid #eee; text-align: left; }
+td.num, th.num { text-align: right; }
+.totals { margin-top: 1rem; max-width: 320px; margin-left: auto; }
+.totals .row { display: flex; justify-content: space-between; padding: .2rem 0; }
+.totals .grand { font-weight: 700; border-top: 1px solid #ccc; margin-top: .3rem; padding-top: .4rem; }
+
+.panel { background: #fff; border: 1px solid #e3e3e3; border-radius: 6px; padding: 1rem; }
+.field { display: flex; flex-direction: column; gap: .3rem; margin-bottom: .8rem; max-width: 340px; }
+.note { padding: .6rem .8rem; border-radius: 4px; margin: .6rem 0; }
+.note.ok  { background: #e6f6ea; color: #1b6b34; }
+.note.err { background: #fdecec; color: #a12020; }
+.note.info{ background: #eef3fb; color: #234; }
+.pager { display: flex; gap: .6rem; align-items: center; margin: 1rem 0; }

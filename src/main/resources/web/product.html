@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FakeStore — Product</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <div id="bar"></div>
+  <main>
+    <div id="out"><p class="muted">Loading…</p></div>
+  </main>
+
+  <script src="app.js"></script>
+  <script>
+    const id = new URLSearchParams(location.search).get("id");
+
+    async function load() {
+      const out = document.getElementById("out");
+      const res = await fetch("/api/products/" + encodeURIComponent(id));
+      if (res.status === 404) { out.innerHTML = `<div class="note err">Product not found.</div>`; return; }
+      if (!res.ok) { out.innerHTML = `<div class="note err">API error ${res.status}.</div>`; return; }
+      const p = await res.json();
+      out.innerHTML = `
+        <div class="panel" style="display:flex;gap:1.5rem;flex-wrap:wrap">
+          ${thumb(p, "detimg")}
+          <div style="flex:1;min-width:240px">
+            <h2>${esc(p.title)}</h2>
+            <p class="muted">${esc(p.category)} · ★ ${p.rating?.rate ?? ""} (${p.rating?.count ?? 0})</p>
+            <p>${esc(p.description || "")}</p>
+            <p class="price" style="font-size:1.4rem">${money(p.price)}</p>
+            <label>Qty <input id="qty" type="number" value="1" min="1" style="width:64px"></label>
+            <button id="add">Add to cart</button>
+            <div id="msg"></div>
+          </div>
+        </div>`;
+      document.getElementById("add").onclick = () => {
+        addToCart(p, parseInt(document.getElementById("qty").value, 10) || 1);
+        document.getElementById("msg").innerHTML = `<div class="note ok">Added to cart. <a href="checkout.html">Go to cart</a></div>`;
+      };
+    }
+    load();
+  </script>
+</body>
+</html>
