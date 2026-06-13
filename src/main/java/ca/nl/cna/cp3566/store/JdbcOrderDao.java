@@ -1,13 +1,14 @@
 package ca.nl.cna.cp3566.store;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Optional;
 
 /**
  * ====================  YOUR CODE  ====================
  * The JDBC orders repository. Implement the three methods from {@link OrderDao}.
- *
+
  * insert() is called from inside the checkout transaction and is handed that
  * connection — use it, and do NOT commit (the service commits). The reads open
  * their own connection.
@@ -27,6 +28,16 @@ public class JdbcOrderDao extends OrderDao {
         //        (order_number, product_id, title, unit_price, quantity, line_total)
         //      VALUES (?, ?, ?, ?, ?, ?)   -- once per ConfirmedLine in order.lines()
         //      (a batch is tidy: addBatch() in the loop, then executeBatch()).
+        try {
+            PreparedStatement ps = c.prepareStatement("INSERT INTO orders (order_number, email, subtotal, tax, total, placed_at, idempotency_key) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            ps.setString(1, order.orderNumber());
+            ps.setString(2, order.email());
+            ps.setDouble(3, order.subtotal());
+            ps.setDouble(4, order.tax());
+            ps.setDouble(5, order.total());
+            ps.setString(6, order.placedAt());
+            ps.setString(7, null);
+        } catch(SQLException e) {}
         throw new UnsupportedOperationException("TODO: implement insert");
     }
 

@@ -44,6 +44,7 @@ public class StandardCheckoutService extends CheckoutService {
         //   String number   = newOrderNumber();
         //   String placedAt = java.time.OffsetDateTime.now().toString();
         //   return new Order(number, email, lines, subtotal, tax, total, placedAt);
+
         throw new UnsupportedOperationException("TODO: implement assemble");
     }
 }

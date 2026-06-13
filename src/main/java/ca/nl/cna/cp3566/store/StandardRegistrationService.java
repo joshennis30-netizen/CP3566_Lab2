@@ -30,6 +30,7 @@ public class StandardRegistrationService extends RegistrationService {
         //       errors.put("name", "Name is required.");
         //   ... etc ...
         //   return errors;
+        Map<String, String> errors = new LinkedHashMap<>();
         throw new UnsupportedOperationException("TODO: implement validate");
     }
 }

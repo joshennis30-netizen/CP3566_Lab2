@@ -1,7 +1,6 @@
 package ca.nl.cna.cp3566.store;
 
-import java.sql.Connection;
-import java.sql.SQLException;
+import java.sql.*;
 
 /**
  * ====================  YOUR CODE  ====================
@@ -16,6 +15,15 @@ public class JdbcUserDao extends UserDao {
         // TODO (use the GIVEN connection c):
         //   SELECT 1 FROM users WHERE email = ?
         //   return true if there is a row.
+        try {
+            PreparedStatement ps = c.prepareStatement("SELECT 1 FROM users WHERE email = ?");
+            ps.setString(1, emailLower);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return true;
+                }
+            }
+        } catch (SQLException e) {}
         throw new UnsupportedOperationException("TODO: implement emailExists");
     }
 
@@ -27,6 +35,19 @@ public class JdbcUserDao extends UserDao {
         //   - prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)
         //   - executeUpdate(), then read getGeneratedKeys() to get the new id and return it.
         //   Store passwordHash exactly as given. NEVER store a raw password.
+        String sql = "INSERT INTO users (name, email, password_hash, created_at) VALUES (?, ?, ?, ?)";
+        try {
+            PreparedStatement ps = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            ps.setString(1, name);
+            ps.setString(2, emailLower);
+            ps.setString(3, passwordHash);
+            ps.setString(4, createdAt);
+            ps.executeUpdate();
+            ResultSet rs = ps.getGeneratedKeys();
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch(SQLException e) {}
         throw new UnsupportedOperationException("TODO: implement insert");
     }
 }
