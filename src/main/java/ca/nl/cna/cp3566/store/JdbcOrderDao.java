@@ -28,16 +28,24 @@ public class JdbcOrderDao extends OrderDao {
         //        (order_number, product_id, title, unit_price, quantity, line_total)
         //      VALUES (?, ?, ?, ?, ?, ?)   -- once per ConfirmedLine in order.lines()
         //      (a batch is tidy: addBatch() in the loop, then executeBatch()).
-        try {
-            PreparedStatement ps = c.prepareStatement("INSERT INTO orders (order_number, email, subtotal, tax, total, placed_at, idempotency_key) VALUES (?, ?, ?, ?, ?, ?, ?)");
-            ps.setString(1, order.orderNumber());
-            ps.setString(2, order.email());
-            ps.setDouble(3, order.subtotal());
-            ps.setDouble(4, order.tax());
-            ps.setDouble(5, order.total());
-            ps.setString(6, order.placedAt());
-            ps.setString(7, null);
-        } catch(SQLException e) {}
+//        try {
+//            PreparedStatement ps = c.prepareStatement("INSERT INTO orders (order_number, email, subtotal, tax, total, placed_at, idempotency_key) VALUES (?, ?, ?, ?, ?, ?, ?)");
+//            ps.setString(1, order.orderNumber());
+//            ps.setString(2, order.email());
+//            ps.setDouble(3, order.subtotal());
+//            ps.setDouble(4, order.tax());
+//            ps.setDouble(5, order.total());
+//            ps.setString(6, order.placedAt());
+//            ps.setString(7, null);
+//            ps.executeUpdate();
+//            PreparedStatement ps2 = c.prepareStatement("INSERT INTO order_lines (order_number, product_id, title, unit_price, quantity, line_total) VALUES (?, ?, ?, ?, ?, ?)");
+//            ps2.setString(1, order.orderNumber());
+//            ps2.setInt(2, order.lines().getFirst().productId());
+//            ps2.setString(3, order.lines().getFirst().title());
+//            ps2.setDouble(4, order.lines().getFirst().unitPrice());
+//            ps2.setInt(5, order.lines().getFirst().quantity());
+//            ps2.setDouble(6, order.lines().getFirst().lineTotal());
+//        } catch(SQLException e) {}
         throw new UnsupportedOperationException("TODO: implement insert");
     }
 
