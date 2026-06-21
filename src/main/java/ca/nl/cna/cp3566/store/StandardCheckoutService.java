@@ -2,6 +2,7 @@ package ca.nl.cna.cp3566.store;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -32,7 +33,20 @@ public class StandardCheckoutService extends CheckoutService {
         //                            line.quantity(), round2(p.price() * line.quantity()));
         // If you throw at any point, the template rolls the transaction back — every
         // reservation you already made is undone automatically.
-        throw new UnsupportedOperationException("TODO: implement reserveAndPrice");
+        List<ConfirmedLine> lines = new ArrayList<>();
+        for (OrderLine item : items) {
+            if (item.quantity() < 1) {
+                throw ApiException.unprocessable("");
+            }
+            Product p = products.findById(item.productId())
+                    .orElseThrow(() -> ApiException.notFound("No product with id " + item.productId()));
+            if (!products.reserve(c, item.productId(), item.quantity())) {
+                throw ApiException.conflict("Not enough stock for \"" + p.title() + "\"");
+            }
+            double lineTotal = p.price() * item.quantity();
+            lines.add(new ConfirmedLine(p.id(), p.title(), p.price(), item.quantity(), lineTotal));
+        }
+        return lines;
     }
 
     @Override
@@ -44,7 +58,11 @@ public class StandardCheckoutService extends CheckoutService {
         //   String number   = newOrderNumber();
         //   String placedAt = java.time.OffsetDateTime.now().toString();
         //   return new Order(number, email, lines, subtotal, tax, total, placedAt);
-
-        throw new UnsupportedOperationException("TODO: implement assemble");
+        double subtotal = round2(lines.stream().mapToDouble(ConfirmedLine::lineTotal).sum());
+        double tax = round2(subtotal * taxRate() );
+        double total = round2(subtotal + tax );
+        String number = newOrderNumber();
+        String placedAt = java.time.OffsetDateTime.now().toString();
+        return new Order(number, email, lines, subtotal, tax, total, placedAt);
     }
 }

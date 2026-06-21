@@ -1,6 +1,8 @@
 package ca.nl.cna.cp3566.store;
 
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * ====================  YOUR CODE  ====================
@@ -15,16 +17,16 @@ public class JdbcUserDao extends UserDao {
         // TODO (use the GIVEN connection c):
         //   SELECT 1 FROM users WHERE email = ?
         //   return true if there is a row.
-//        try {
-//            PreparedStatement ps = c.prepareStatement("SELECT 1 FROM users WHERE email = ?");
-//            ps.setString(1, emailLower);
-//            try (ResultSet rs = ps.executeQuery()) {
-//                if (rs.next()) {
-//                    return true;
-//                }
-//            }
-//        } catch (SQLException e) {}
-        throw new UnsupportedOperationException("TODO: implement emailExists");
+        // Create list to store result
+        List<Boolean> result = new ArrayList<>();
+        // Creates PreparedStatement
+        try (PreparedStatement ps = c.prepareStatement("SELECT 1 FROM users WHERE email = ?")) {
+            ps.setString(1, emailLower);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {}
+        return result.get(0);
     }
 
     @Override
@@ -35,19 +37,19 @@ public class JdbcUserDao extends UserDao {
         //   - prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)
         //   - executeUpdate(), then read getGeneratedKeys() to get the new id and return it.
         //   Store passwordHash exactly as given. NEVER store a raw password.
-//        String sql = "INSERT INTO users (name, email, password_hash, created_at) VALUES (?, ?, ?, ?)";
-//        try {
-//            PreparedStatement ps = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-//            ps.setString(1, name);
-//            ps.setString(2, emailLower);
-//            ps.setString(3, passwordHash);
-//            ps.setString(4, createdAt);
-//            ps.executeUpdate();
-//            ResultSet rs = ps.getGeneratedKeys();
-//            if (rs.next()) {
-//                return rs.getInt(1);
-//            }
-//        } catch(SQLException e) {}
-        throw new UnsupportedOperationException("TODO: implement insert");
+        ArrayList<Integer> ids = new ArrayList<>();
+        String sql = "INSERT INTO users (name, email, password_hash, created_at) VALUES (?, ?, ?, ?)";
+        try (PreparedStatement ps = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setString(1, name);
+            ps.setString(2, emailLower);
+            ps.setString(3, passwordHash);
+            ps.setString(4, createdAt);
+            ps.executeUpdate();
+            ResultSet rs = ps.getGeneratedKeys();
+            if (rs.next()) {
+                ids.add(rs.getInt(1));
+            }
+        } catch(SQLException e) {}
+        return ids.get(0);
     }
 }

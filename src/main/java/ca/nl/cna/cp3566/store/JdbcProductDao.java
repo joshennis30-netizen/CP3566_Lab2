@@ -17,11 +17,6 @@ import java.util.Optional;
  * =====================================================
  */
 public class JdbcProductDao extends ProductDao {
-    // Assign URL, USER, and PASS to use connection
-    String URL = "jdbc:mysql://localhost:8081/api;MODE=MySQL;DATABASE_TO_LOWER=TRUE";
-    String USER = "sa";
-    String PASS = "";
-    String connect = URL + "," + USER + "," + PASS;
     @Override
     public Optional<Product> findById(int id){
         // TODO:
@@ -29,7 +24,8 @@ public class JdbcProductDao extends ProductDao {
         //   - open() a connection in try-with-resources, bind id, run the query.
         //   - if there is a row, return Optional.of(mapRow(rs)); else Optional.empty().
         //   - on SQLException, throw ApiException.server("...").
-        try (Connection conn = DriverManager.getConnection(connect);
+        // Opens connection
+        try (Connection conn = open();
             PreparedStatement ps = conn.prepareStatement("SELECT * FROM products WHERE id = ?")) {
             // bound id
             ps.setInt(1, id);
@@ -67,20 +63,66 @@ public class JdbcProductDao extends ProductDao {
         //   Count:      SELECT COUNT(*) FROM products <where>   (same bound values)
         //
         //   return new Page(items, total, query.safePage(), query.safeSize());
-//        StringBuilder where = new StringBuilder("WHERE (LOWER(q) LIKE ?) AND (LOWER(category) = ?) AND (minPrice >= ?) AND (maxPrice <= ?)");
-//        ArrayList<Object> boundList = new ArrayList<Object>();
-//        boundList.add(query.q());
-//        boundList.add(query.category());
-//        boundList.add(query.minPrice());
-//        boundList.add(query.maxPrice());
-//
-//        try {
-//            Connection conn = DriverManager.getConnection(connect);
-//            PreparedStatement ps = conn.prepareStatement("SELECT * FROM products <where> <orderBy> LIMIT ? OFFSET ?");
-//            PreparedStatement ps2 = conn.prepareStatement("SELECT COUNT(*) FROM products <where>");
-//        } catch(SQLException e) {}
 
-        throw new UnsupportedOperationException("TODO: implement search");
+        StringBuilder where = new StringBuilder(" WHERE 1 = 1");
+        // Create list of bound values
+        ArrayList<Object> boundList = new ArrayList<>();
+        if (query.q() != null) {
+            where.append(" AND (LOWER(title) LIKE ? OR LOWER(description) LIKE ?)");
+            boundList.add("%" + query.q() + "%");
+            boundList.add("%" + query.q() + "%");
+        }
+        if (query.category() != null) {
+            where.append(" AND LOWER(category) = ?");
+            boundList.add(query.category());
+        }
+        if (query.minPrice() != null) {
+            where.append(" AND price >= ?");
+            boundList.add(query.minPrice());
+        }
+        if (query.maxPrice() != null) {
+            where.append(" AND price <= ?");
+            boundList.add(query.maxPrice());
+        }
+
+        String orderBy = (" ORDER BY id ASC");
+        // Product list for first PreparedStatement
+        List<Product> items = new ArrayList<>();
+        // Initialize total
+        List<Integer> totals = new ArrayList<>();
+
+        //Prepared statements
+        try (
+           Connection conn = open();
+            PreparedStatement ps = conn.prepareStatement("SELECT * FROM products" + where + orderBy + " LIMIT ? OFFSET ?")) {
+            int i = 1;
+                for (Object bound : boundList) {
+                    ps.setObject(i++, bound);
+                }
+                ps.setInt(i++, query.safeSize());
+                ps.setInt(i, query.offset());
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        items.add(mapRow(rs));
+                    }
+                }
+            try (PreparedStatement ps2 = conn.prepareStatement("SELECT COUNT(*) FROM products " + where)) {
+                int i1 = 1;
+                for (Object bound1 : boundList) {
+                    ps2.setObject(i1++, bound1);
+                }
+                try (ResultSet rs2 = ps2.executeQuery()) {
+                    rs2.next();
+                    int total1 = rs2.getInt(1);
+                    totals.add(total1);
+                }
+            }
+        } catch(SQLException e) {
+            throw ApiException.server(e.getMessage());
+        }
+        int total = totals.get(0);
+        return new Page(items, total, query.safePage(), query.safeSize());
+        //throw new UnsupportedOperationException("TODO: implement search");
     }
 
     @Override
@@ -88,20 +130,18 @@ public class JdbcProductDao extends ProductDao {
         // TODO:
         //   SELECT DISTINCT category FROM products ORDER BY category
         //   collect the strings into a List and return it.
-//        List<String> categories = new ArrayList<>();
-//        try {
-//            // Opens connection
-//            Connection conn = DriverManager.getConnection(connect);
-//            Statement stmt = conn.createStatement();
-//            try (ResultSet rs = stmt.executeQuery("SELECT DISTINCT category FROM products ORDER BY category")) {
-//                while (rs.next()) {
-//                    String category = rs.getString("category");
-//                    categories.add(category);
-//                }
-//            }
-//        } catch(SQLException e) {}
-//        return categories;
-        throw new UnsupportedOperationException("TODO: implement categories");
+        List<String> categories = new ArrayList<>();
+        try (Connection conn = open();
+            Statement stmt = conn.createStatement()) {
+            try (ResultSet rs = stmt.executeQuery("SELECT DISTINCT category FROM products ORDER BY category")) {
+                while (rs.next()) {
+                    String category = rs.getString("category");
+                    categories.add(category);
+                }
+            }
+        } catch(SQLException e) {}
+        return categories;
+        //throw new UnsupportedOperationException("TODO: implement categories");
     }
 
     @Override
@@ -115,15 +155,15 @@ public class JdbcProductDao extends ProductDao {
         //   (the service turns that into a 409). Because the check and the take
         //   are one atomic statement under a row lock, two shoppers can never both
         //   buy the last unit. THINK ABOUT why a SELECT-then-UPDATE would not be safe.
-//        try {
-//            //Prepared Statement with query
-//            PreparedStatement ps = c.prepareStatement("UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?");
-//            ps.setInt(2, productId);
-//            ps.setInt(3, quantity);
-//            return(ps.executeUpdate() == 1);
-//
-//        } catch(SQLException e) {}
-        //String URL = c.getMetaData().getURL();
-        throw new UnsupportedOperationException("TODO: implement reserve");
+
+        List<Boolean> result = new ArrayList<>();
+        try (PreparedStatement ps = c.prepareStatement("UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?")) {
+            ps.setInt(1, quantity);
+            ps.setInt(2, productId);
+            ps.setInt(3, quantity);
+            result.add(ps.executeUpdate() == 1);
+        } catch(SQLException e) {}
+        return result.get(0);
+        //throw new UnsupportedOperationException("TODO: implement reserve");
     }
 }

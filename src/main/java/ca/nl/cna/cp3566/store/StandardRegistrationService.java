@@ -30,7 +30,22 @@ public class StandardRegistrationService extends RegistrationService {
         //       errors.put("name", "Name is required.");
         //   ... etc ...
         //   return errors;
+
         Map<String, String> errors = new LinkedHashMap<>();
-        throw new UnsupportedOperationException("TODO: implement validate");
+
+        if (req == null || req.name() == null || req.name().isBlank()) {
+            errors.put("name", "Name is required.");
+        }
+
+        if (req == null || req.email() == null || req.email().isBlank()) {
+            errors.put("email", "Email is required");
+        } else if (!req.email().trim().matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
+            errors.put("email", "Invalid email address.");
+        }
+
+        if (req == null || req.password() == null || req.password().length() < 8) {
+            errors.put("password", "Password must be at least 8 characters long.");
+        }
+        return errors;
     }
 }
