@@ -39,7 +39,7 @@ public class JdbcOrderDao extends OrderDao {
             ps.setDouble(4, order.tax());
             ps.setDouble(5, order.total());
             ps.setString(6, order.placedAt());
-            ps.setString(7, null);
+            ps.setString(7, idempotencyKey);
             ps.executeUpdate();
         }
         try (PreparedStatement ps2 = c.prepareStatement("INSERT INTO order_lines (order_number, product_id, title, unit_price, quantity, line_total) VALUES (?, ?, ?, ?, ?, ?)")) {

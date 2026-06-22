@@ -66,7 +66,7 @@ public class JdbcProductDao extends ProductDao {
 
         StringBuilder where = new StringBuilder(" WHERE 1 = 1");
         // Create list of bound values
-        ArrayList<Object> boundList = new ArrayList<>();
+        List<Object> boundList = new ArrayList<>();
         if (query.q() != null) {
             where.append(" AND (LOWER(title) LIKE ? OR LOWER(description) LIKE ?)");
             boundList.add("%" + query.q() + "%");
@@ -85,10 +85,17 @@ public class JdbcProductDao extends ProductDao {
             boundList.add(query.maxPrice());
         }
 
-        String orderBy = (" ORDER BY id ASC");
+        String orderBy = switch (query.sort() == null ? "" : query.sort()) {
+            case "price_asc" -> " ORDER BY price ASC";
+            case "price_desc" -> " ORDER BY price DESC";
+            case "rating" -> " ORDER BY rating_rate DESC";
+            case "title" -> " ORDER BY LOWER(title) ASC";
+            default -> " ORDER BY id ASC";
+        };
         // Product list for first PreparedStatement
         List<Product> items = new ArrayList<>();
         // Initialize total
+        int total;
         List<Integer> totals = new ArrayList<>();
 
         //Prepared statements
@@ -113,16 +120,15 @@ public class JdbcProductDao extends ProductDao {
                 }
                 try (ResultSet rs2 = ps2.executeQuery()) {
                     rs2.next();
-                    int total1 = rs2.getInt(1);
-                    totals.add(total1);
+                    total = rs2.getInt(1);
+                    totals.add(total);
                 }
             }
         } catch(SQLException e) {
             throw ApiException.server(e.getMessage());
         }
-        int total = totals.get(0);
+        total = totals.get(0);
         return new Page(items, total, query.safePage(), query.safeSize());
-        //throw new UnsupportedOperationException("TODO: implement search");
     }
 
     @Override
@@ -164,6 +170,5 @@ public class JdbcProductDao extends ProductDao {
             result.add(ps.executeUpdate() == 1);
         } catch(SQLException e) {}
         return result.get(0);
-        //throw new UnsupportedOperationException("TODO: implement reserve");
     }
 }

@@ -34,30 +34,23 @@ public class StandardCheckoutService extends CheckoutService {
         // If you throw at any point, the template rolls the transaction back — every
         // reservation you already made is undone automatically.
         List<ConfirmedLine> lines = new ArrayList<>();
-        for (OrderLine item : items) {
-            if (item.quantity() < 1) {
+        for (OrderLine line : items) {
+            if (line.quantity() < 1) {
                 throw ApiException.unprocessable("");
             }
-            Product p = products.findById(item.productId())
-                    .orElseThrow(() -> ApiException.notFound("No product with id " + item.productId()));
-            if (!products.reserve(c, item.productId(), item.quantity())) {
+            Product p = products.findById(line.productId())
+                    .orElseThrow(() -> ApiException.notFound("No product with id " + line.productId()));
+            if (!products.reserve(c, line.productId(), line.quantity())) {
                 throw ApiException.conflict("Not enough stock for \"" + p.title() + "\"");
             }
-            double lineTotal = p.price() * item.quantity();
-            lines.add(new ConfirmedLine(p.id(), p.title(), p.price(), item.quantity(), lineTotal));
+            double lineTotal = p.price() * line.quantity();
+            lines.add(new ConfirmedLine(p.id(), p.title(), p.price(), line.quantity(), lineTotal));
         }
         return lines;
     }
 
     @Override
     protected Order assemble(String email, List<ConfirmedLine> lines) {
-        // TODO: turn the priced lines into the finished Order:
-        //   double subtotal = round2( sum of l.lineTotal() );
-        //   double tax      = round2( subtotal * taxRate() );
-        //   double total    = round2( subtotal + tax );
-        //   String number   = newOrderNumber();
-        //   String placedAt = java.time.OffsetDateTime.now().toString();
-        //   return new Order(number, email, lines, subtotal, tax, total, placedAt);
         double subtotal = round2(lines.stream().mapToDouble(ConfirmedLine::lineTotal).sum());
         double tax = round2(subtotal * taxRate() );
         double total = round2(subtotal + tax );
